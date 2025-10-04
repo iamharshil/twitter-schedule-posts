@@ -15,8 +15,8 @@ type SessionData = {
 };
 
 const sessionOptions = {
-  password: "iHY5MT7EddG6g2igxVCpUXPPSIubGHiQ",
-  cookieName: "session",
+  password: process.env.SESSION_PASSWORD as string,
+  cookieName: process.env.SESSION_NAME as string,
 };
 
 export const session = {
@@ -38,8 +38,8 @@ export const session = {
   },
 
   async save() {
-    const sesssionInstance = await this.get();
-    await sesssionInstance.save();
+    const sessionInstance = await this.get();
+    await sessionInstance.save();
   },
 
   async destroy() {
