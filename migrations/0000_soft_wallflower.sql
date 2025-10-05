@@ -15,6 +15,10 @@ CREATE TABLE "users" (
 	"username" varchar(255) NOT NULL,
 	"profile" varchar(255),
 	"accessToken" varchar(255),
+	"refreshToken" varchar(255),
+	"expiresIn" integer,
+	"scope" varchar(255),
+	"isAuthed" integer DEFAULT 1 NOT NULL,
 	"createdAt" timestamp DEFAULT now() NOT NULL,
 	"updatedAt" timestamp
 );

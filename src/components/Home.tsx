@@ -159,12 +159,28 @@ export default function Home() {
             })
     }
 
-    const handleSchedulePost = () => {
+    const handleSchedulePost = async () => {
         if (!postContent.trim() || !selectedDate || !selectedTime) return;
 
         const [hours, minutes] = selectedTime.split(':').map(Number);
         const scheduledDateTime = new Date(selectedDate);
         scheduledDateTime.setHours(hours, minutes, 0, 0);
+
+        if (scheduledDateTime < new Date()) {
+            alert("Please select a future date and time for scheduling.");
+            return;
+        }
+
+        await fetch("/api/posts/schedule", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                content: postContent,
+                scheduledFor: scheduledDateTime.toISOString()
+            })
+        })
 
         const newPost = {
             id: Date.now().toString(),

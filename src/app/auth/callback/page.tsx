@@ -7,6 +7,8 @@ export default function AuthCallbackPage() {
 
     useEffect(() => {
         (async () => {
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get("error");
             if (error) {
@@ -22,7 +24,7 @@ export default function AuthCallbackPage() {
 
             if (code && state) {
                 const res = await fetch(
-                    `/api/auth/callback?code=${code}&state=${state}`
+                    `/api/auth/callback?code=${code}&state=${state}&timezone=${timezone}`
                 );
                 const response = await res.json();
                 console.log("response", response);

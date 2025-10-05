@@ -1,6 +1,6 @@
 {
-  "id": "de6e7486-7c29-4d49-8281-bbea06d94180",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "6f56f80c-60a0-429b-9bfc-0787e481402a",
+  "prevId": "b291abc3-65c3-4bf5-b7b8-f9c186c0aa78",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -64,23 +64,7 @@
           "notNull": false
         }
       },
-      "indexes": {
-        "userId_idx": {
-          "name": "userId_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "posts_userId_users_id_fk": {
           "name": "posts_userId_users_id_fk",
@@ -144,6 +128,12 @@
         "profile": {
           "name": "profile",
           "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": false
         },

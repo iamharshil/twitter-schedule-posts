@@ -5,8 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1759649488743,
-      "tag": "0000_clammy_sister_grimm",
+      "when": 1759651349353,
+      "tag": "0000_soft_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1759663822305,
+      "tag": "0001_loose_major_mapleleaf",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1759664883257,
+      "tag": "0002_huge_namora",
       "breakpoints": true
     }
   ]
