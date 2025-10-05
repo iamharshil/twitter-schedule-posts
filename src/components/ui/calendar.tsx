@@ -25,6 +25,8 @@ function Calendar({
 }) {
   const defaultClassNames = getDefaultClassNames()
 
+  const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -36,8 +38,8 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) =>
-          date.toLocaleString("default", { month: "short" }),
+        // deterministic short month names (avoid locale differences between server and client)
+        formatMonthDropdown: (date) => MONTHS_SHORT[date.getMonth()],
         ...formatters,
       }}
       classNames={{
@@ -190,7 +192,7 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      data-day={day.date.toISOString().split('T')[0]}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&

@@ -22,6 +22,20 @@
       "when": 1759664883257,
       "tag": "0002_huge_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1759666683242,
+      "tag": "0003_omniscient_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759688998605,
+      "tag": "0004_gigantic_vargas",
+      "breakpoints": true
     }
   ]
 }

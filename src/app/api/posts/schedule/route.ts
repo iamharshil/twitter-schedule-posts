@@ -1,7 +1,8 @@
-import { eq } from "drizzle-orm";
+// imports
 import { NextResponse } from "next/server";
-import { db } from "@/db/drizzle";
-import { postTable } from "@/db/schema";
+import postRepo from "@/db/repos/post";
+import userRepo from "@/db/repos/user";
+import type { Post } from "@/lib/validation";
 import { validatePost } from "@/lib/validation";
 import { session } from "@/utils/session";
 
@@ -16,8 +17,21 @@ export const POST = async (req: Request) => {
 			return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 		}
 
+		// Resolve numeric user id from session (prefer id, else xId -> DB lookup)
+		const sessionUser = user as unknown as { id?: number; xId?: string };
+		let dbUser = undefined;
+		if (sessionUser.id && typeof sessionUser.id === "number") {
+			dbUser = await userRepo.getUserById(sessionUser.id as number);
+		} else if (sessionUser.xId) {
+			dbUser = await userRepo.getUserByXId(sessionUser.xId);
+		}
+
+		if (!dbUser || !dbUser.id) {
+			return NextResponse.json({ success: false, message: "User not found or unauthorized" }, { status: 401 });
+		}
+
 		const newPostData = {
-			userId: user.id as number,
+			userId: dbUser.id,
 			content,
 			status: "pending",
 			scheduledFor,
@@ -30,21 +44,19 @@ export const POST = async (req: Request) => {
 			return NextResponse.json({ success: false, message: "Invalid post data" }, { status: 400 });
 		}
 
-		// check if same content is already exists in posts
-		const existingPost = await db.select().from(postTable).where(eq(postTable.content, content)).limit(1);
+		// check if same content already exists for this user
+		const postsForUser = (await postRepo.getPostsByUserId(dbUser.id as number)) as unknown as Post[];
+		const existingPost = postsForUser.find((p) => p.content === content);
 
-		if (existingPost.length > 0) {
+		if (existingPost) {
 			return NextResponse.json(
 				{ success: false, message: "Post with same content already exists" },
 				{ status: 400 },
 			);
 		}
 
-		await db.insert(postTable).values(newPostData);
-		const scheduledPosts = await db
-			.select()
-			.from(postTable)
-			.where(eq(postTable.userId, user.id as number));
+		await postRepo.createPost(newPostData);
+		const scheduledPosts = await postRepo.getPostsByUserId(dbUser.id as number);
 
 		console.log("Post scheduled successfully:", scheduledPosts);
 		return NextResponse.json({ success: true, message: "Post scheduled successfully!", data: scheduledPosts });
