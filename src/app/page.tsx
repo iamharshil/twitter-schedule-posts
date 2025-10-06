@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Home from "@/components/Home";
-import postRepo from "@/db/repos/post";
+// import postRepo from "@/db/repos/post";
 import userRepo from "@/db/repos/user";
-import type { Post } from "@/lib/validation";
+// import type { Post } from "@/lib/validation";
 import { session } from "@/utils/session";
 
 export default async function HomePage() {
@@ -27,20 +27,21 @@ export default async function HomePage() {
       redirect("/auth");
     }
 
-    const dbPosts = await postRepo.getPostsByUserId(dbUser.id as number);
+    // const dbPosts = await postRepo.getPostsByUserId(dbUser.id as number);
 
-    const posts = (dbPosts as unknown as Post[]).map((post) => ({
-      id: post.id?.toString(),
-      userId: post.userId,
-      content: post.content,
-      status: post.status as "posted" | "pending" | "failed",
-      scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString() : "",
-      createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
-      updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
-    }));
+    // const posts = (dbPosts as unknown as Post[]).map((post) => ({
+    //   id: post.id?.toString(),
+    //   userId: post.userId,
+    //   content: post.content,
+    //   status: post.status as "posted" | "pending" | "failed",
+    //   scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString() : "",
+    //   createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
+    //   updatedAt: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+    // }));
+    // console.log("posts", posts);
 
     return (
-      <Home posts={posts} />
+      <Home />
     )
   }
 }
