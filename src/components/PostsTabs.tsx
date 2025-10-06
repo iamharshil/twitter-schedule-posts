@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircleIcon, Clock3Icon, EditIcon, PlayIcon, TrashIcon } from 'lucide-react';
-import DateClient from './DateClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ScheduledPost } from '@/types/posts';
@@ -65,7 +64,14 @@ export default function PostsTabs({
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-3 mb-3">
                                                     <span className="text-sm font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-full">
-                                                        <DateClient date={post.scheduledFor} />
+                                                        {(() => {
+                                                            try {
+                                                                const d = post.scheduledFor instanceof Date ? post.scheduledFor : new Date(post.scheduledFor);
+                                                                return Number.isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleString();
+                                                            } catch {
+                                                                return String(post.scheduledFor ?? '');
+                                                            }
+                                                        })()}
                                                     </span>
                                                     <span className={`text-xs px-3 py-1 rounded-full font-medium ${post.status === 'pending'
                                                         ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
@@ -120,7 +126,14 @@ export default function PostsTabs({
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-3 mb-3">
                                                     <span className="text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 px-3 py-1 rounded-full">
-                                                        <DateClient date={post.postedAt} />
+                                                        {(() => {
+                                                            try {
+                                                                const d = post.postedAt instanceof Date ? post.postedAt : new Date(post.postedAt);
+                                                                return Number.isNaN(d.getTime()) ? 'Invalid date' : d.toLocaleString();
+                                                            } catch {
+                                                                return String(post.postedAt ?? '');
+                                                            }
+                                                        })()}
                                                     </span>
                                                     <span className="text-xs px-3 py-1 rounded-full font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
                                                         Posted

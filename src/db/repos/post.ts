@@ -30,7 +30,7 @@ export const createPost = async (data: PostInsert) => {
 };
 
 export const getPostsByUserId = async (userId: number) => {
-	const posts = await db.select().from(postTable).where(eq(postTable.userId, userId));
+	const posts = await db.select().from(postTable).where(eq(postTable.userId, userId)).orderBy(postTable.scheduledFor);
 	return posts;
 };
 
