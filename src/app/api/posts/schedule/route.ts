@@ -19,7 +19,7 @@ export const POST = async (req: Request) => {
 
 		// Resolve numeric user id from session (prefer id, else xId -> DB lookup)
 		const sessionUser = user as unknown as { id?: number; xId?: string };
-		let dbUser = undefined;
+		let dbUser: { id?: number } | null = null;
 		if (sessionUser.id && typeof sessionUser.id === "number") {
 			dbUser = await userRepo.getUserById(sessionUser.id as number);
 		} else if (sessionUser.xId) {

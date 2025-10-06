@@ -7,25 +7,47 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { useScheduledPosts } from "@/lib/use-scheduled-posts"
 import { cn } from "@/lib/utils"
 
 export function ScheduleForm() {
     const [content, setContent] = useState("")
     const [when, setWhen] = useState<string>("")
-    const { addPost } = useScheduledPosts()
+    const [loading, setLoading] = useState<boolean>(false);
 
     const canSubmit = content.trim().length > 0 && when
 
-    const onSubmit = (e: React.FormEvent) => {
+    const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!canSubmit) return
-        addPost({
-            content: content.trim(),
-            scheduledAt: new Date(when).toISOString(),
-        })
-        setContent("")
-        toast("Your post has been added to the schedule.")
+        setLoading(true);
+
+        try {
+            await fetch("/api/posts/schedule", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    content: content.trim(),
+                    scheduledFor: new Date(when).toISOString(),
+                }),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success) {
+                        return toast.success("Your post has been added to the schedule.")
+                    } else {
+                        return toast.error(data?.message || "Failed to schedule post. Please try again.")
+                    }
+                })
+        } catch (_) {
+            toast.error("Failed to schedule post. Please try again.")
+            return
+        } finally {
+            setContent("")
+            setWhen("")
+            setLoading(false);
+        }
     }
 
     return (
@@ -69,14 +91,19 @@ export function ScheduleForm() {
                 <Button
                     type="submit"
                     className="w-full"
-                    disabled={!canSubmit}
+                    disabled={!canSubmit || loading}
                     style={{
                         backgroundImage: "linear-gradient(90deg, var(--brand-start), var(--brand-end))",
                         color: "oklch(1 0 0)",
                         boxShadow: "0 14px 28px -16px color-mix(in oklab, var(--brand-end), transparent 78%)",
                     }}
                 >
-                    Schedule Post
+                    {loading ? (
+                        <>
+                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+                            Scheduling...
+                        </>
+                    ) : "Schedule Post"}
                 </Button>
             </div>
         </form>
