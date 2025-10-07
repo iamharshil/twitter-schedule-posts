@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useState } from "react"
 import { LogoutButton } from "@/components/logout-button"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -8,6 +9,20 @@ import { ScheduledList } from "./scheduled-list"
 import { ModeToggle } from "./toggle-theme"
 
 export default function Page() {
+    const [posts, setPosts] = useState([]);
+
+    const fetchScheduleList = useCallback(async () => {
+        const res = await fetch("/api/posts")
+        const data = await res.json();
+        setPosts(data.data);
+    }, []);
+
+
+    useEffect(() => {
+        fetchScheduleList()
+    }, [fetchScheduleList]);
+
+
     return (
         <main className="min-h-dvh relative overflow-hidden">
             <div
@@ -116,7 +131,7 @@ export default function Page() {
                             <h2 className="text-lg font-medium">Scheduled Posts</h2>
                         </div>
                         <div className="relative">
-                            <ScheduledList />
+                            <ScheduledList posts={posts} />
                         </div>
                     </Card>
                 </div>
