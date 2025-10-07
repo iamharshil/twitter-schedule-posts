@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { toast } from "sonner";
 export default function AuthCallbackPage() {
     const router = useRouter();
 
@@ -27,9 +28,10 @@ export default function AuthCallbackPage() {
                     `/api/auth/callback?code=${code}&state=${state}&timezone=${timezone}`
                 );
                 const response = await res.json();
-                console.log("response", response);
                 if (response?.success) {
                     router.push("/");
+                } else {
+                    toast.error(response.message);
                 }
             }
         })();
