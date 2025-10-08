@@ -1,20 +1,34 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { toast } from "sonner";
 import { LogoutButton } from "@/components/logout-button"
+import TimePicker from "@/components/TimePicker";
+import { Button } from "@/components/ui/button";
+// Calendar is unused here; DatePicker is used instead
 import { Card } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils"
-import { ScheduleForm } from "./schedule-form"
+import DatePicker from "./DatePicker";
 import { ScheduledList } from "./scheduled-list"
 import { ModeToggle } from "./toggle-theme"
 
 export default function Page() {
     const [posts, setPosts] = useState([]);
+    const [loadingPosts, setLoadingPosts] = useState<boolean>(false);
 
     const fetchScheduleList = useCallback(async () => {
-        const res = await fetch("/api/posts")
-        const data = await res.json();
-        setPosts(data.data);
+        setLoadingPosts(true)
+        try {
+            const res = await fetch("/api/posts")
+            const data = await res.json();
+            setPosts(data.data || []);
+        } catch (e) {
+            console.error('failed to fetch posts', e)
+            setPosts([])
+        } finally {
+            setLoadingPosts(false)
+        }
     }, []);
 
 
@@ -102,7 +116,7 @@ export default function Page() {
                         <p className="mb-4 text-sm text-muted-foreground relative">
                             Write your content and pick a time to publish.
                         </p>
-                        <ScheduleForm />
+                        <InlineScheduleForm onRefresh={fetchScheduleList} />
                     </Card>
 
                     <Card
@@ -131,7 +145,7 @@ export default function Page() {
                             <h2 className="text-lg font-medium">Scheduled Posts</h2>
                         </div>
                         <div className="relative">
-                            <ScheduledList posts={posts} />
+                            <ScheduledList posts={posts} onRefresh={fetchScheduleList} loading={loadingPosts} />
                         </div>
                     </Card>
                 </div>
@@ -141,5 +155,135 @@ export default function Page() {
                 Crafted for creators — responsive, accessible, and fast.
             </footer>
         </main>
+    )
+}
+
+function InlineScheduleForm({ onRefresh }: { onRefresh?: () => Promise<void> }) {
+    const [content, setContent] = useState("")
+    const [date, setDate] = useState<Date | null>(null)
+    const [time, setTime] = useState<string>("")
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const canSubmit = content.trim().length > 0 && date && time
+
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!canSubmit) return
+        setLoading(true);
+
+        try {
+            await fetch("/api/posts/schedule", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    content: content.trim(),
+                    scheduledFor: (() => {
+                        if (!date || !time) return null
+                        const [hh, mm] = time.split(":").map(Number)
+                        const d = new Date(date)
+                        d.setHours(hh, mm, 0, 0)
+                        return d.toISOString()
+                    })(),
+                }),
+            })
+                .then((res) => res.json())
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success) {
+                        // refresh the list so the new post shows up
+                        onRefresh?.().catch(() => { })
+                        return toast.success("Your post has been added to the schedule.")
+                    } else {
+                        return toast.error(data?.message || "Failed to schedule post. Please try again.")
+                    }
+                })
+        } catch (_) {
+            toast.error("Failed to schedule post. Please try again.")
+            return
+        } finally {
+            setContent("")
+            setDate(null)
+            setTime("")
+            setLoading(false);
+        }
+    }
+
+    return (
+        <form onSubmit={onSubmit} className="space-y-3">
+            <label className="text-sm font-medium mb-4" htmlFor="content">
+                Content
+            </label>
+            <Textarea
+                id="content"
+                placeholder="Share something great..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                className={cn("min-h-28 mt-1 supports-[backdrop-filter]:backdrop-blur-sm", "bg-background")}
+                style={{
+                    background: "color-mix(in oklab, var(--background), transparent 55%)",
+                    borderColor: "var(--glass-border-color)",
+                }}
+                maxLength={280}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs text-muted-foreground">
+                <span>{content.length}/280</span>
+                <span>Keep it concise and clear.</span>
+            </div>
+
+            <label className="text-sm font-medium" htmlFor="when">
+                Date & time
+            </label>
+            <div className="mt-1 grid grid-cols-2 gap-2 items-start">
+                <div>
+                    <DatePicker
+                        value={date || null}
+                        onChange={(d) => setDate(d)}
+                        minDate={new Date()}
+                    />
+                </div>
+                <div>
+                    <TimePicker
+                        value={time || undefined}
+                        onChange={(t) => setTime(t)}
+                        minTime={(() => {
+                            // if date is today, disallow times before now rounded up to next 15min
+                            if (!date) return null
+                            const now = new Date()
+                            const sel = new Date(date)
+                            if (sel.toDateString() !== now.toDateString()) return null
+                            // round up to next 15 minute
+                            const mins = now.getMinutes()
+                            const next = Math.ceil((mins + 1) / 15) * 15
+                            const h = now.getHours()
+                            const mm = next === 60 ? 0 : next
+                            const hh = next === 60 ? h + 1 : h
+                            return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+                        })()}
+                    />
+                </div>
+            </div>
+
+            <div className="pt-2">
+                <Button
+                    type="submit"
+                    className="w-full"
+                    disabled={!canSubmit || loading}
+                    style={{
+                        backgroundImage: "linear-gradient(90deg, var(--brand-start), var(--brand-end))",
+                        color: "oklch(1 0 0)",
+                        boxShadow: "0 14px 28px -16px color-mix(in oklab, var(--brand-end), transparent 78%)",
+                    }}
+                >
+                    {loading ? (
+                        <>
+                            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true"></span>
+                            Scheduling...
+                        </>
+                    ) : "Schedule Post"}
+                </Button>
+            </div>
+        </form>
     )
 }

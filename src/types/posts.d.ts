@@ -1,9 +1,7 @@
 export type ScheduledPost = {
 	id: string;
-	userId: number;
 	content: string;
+	// some parts of the app expect ISO strings, others use Date; allow both
+	scheduledFor: string | Date;
 	status: "pending" | "posted" | "failed";
-	scheduledFor: Date;
-	createdAt?: Date;
-	updatedAt?: Date;
 };

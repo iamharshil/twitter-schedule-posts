@@ -1,46 +1,29 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/db/drizzle";
-import { userTable } from "@/db/schema";
-
-type UserInsert = {
-	xId: string;
-	name?: string | null;
-	username: string;
-	profile?: string | null;
-	timezone?: string | null;
-	accessToken?: string | null;
-	refreshToken?: string | null;
-	expiresIn?: number | null;
-	scope?: string | null;
-	isAuthed?: number;
-	updatedAt?: Date | null;
-};
-
-export const getUserByXId = async (xId: string) => {
-	const [user] = await db.select().from(userTable).where(eq(userTable.xId, xId)).limit(1);
-	return user;
-};
-
-export const getUserById = async (id: number) => {
-	const [user] = await db.select().from(userTable).where(eq(userTable.id, id)).limit(1);
-	return user;
-};
-
-export const upsertUserByXId = async (data: UserInsert) => {
-	const [user] = await db
-		.insert(userTable)
-		.values(data)
-		.onConflictDoUpdate({
-			target: userTable.xId,
-			set: data,
-		})
-		.returning();
-
-	return user;
-};
+import User from "@/models/user.model";
+import connectDB from "@/utils/database";
 
 export default {
-	getUserByXId,
-	getUserById,
-	upsertUserByXId,
+	async getUserById(id: string) {
+		await connectDB();
+		return await User.findById(id);
+	},
+
+	async getUserByXId(xId: string) {
+		await connectDB();
+		return await User.findOne({ xId });
+	},
+
+	async createUser(userData: Record<string, unknown>) {
+		await connectDB();
+		return await User.create(userData);
+	},
+
+	async updateUser(id: string, updateData: Record<string, unknown>) {
+		await connectDB();
+		return await User.findByIdAndUpdate(id, updateData, { new: true });
+	},
+
+	async deleteUser(id: string) {
+		await connectDB();
+		return await User.findByIdAndDelete(id);
+	},
 };

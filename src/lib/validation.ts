@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const PostSchema = z.object({
-	id: z.string().optional(),
-	userId: z.number().min(1, "userId is required"),
+	_id: z.string().optional(),
+	userId: z.string().min(1, "userId is required"), // MongoDB ObjectId as string
 	content: z.string().min(1, "Post content cannot be empty").max(280, "Post content cannot exceed 280 characters"),
 	status: z.enum(["pending", "posted", "failed"]),
 	scheduledFor: z.string().refine((date) => !Number.isNaN(Number(Date.parse(date))), {

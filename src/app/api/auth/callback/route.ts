@@ -1,9 +1,9 @@
 import { DateTime } from "luxon";
 import { type NextRequest, NextResponse } from "next/server";
 import { TwitterApi } from "twitter-api-v2";
-import { db } from "@/db/drizzle";
-import { userTable } from "@/db/schema";
+import userRepo from "@/db/repos/user";
 import { session } from "@/utils/session";
+import { calculateExpiresAt } from "@/utils/token-refresh";
 
 export const GET = async (request: NextRequest) => {
 	try {
@@ -49,38 +49,52 @@ export const GET = async (request: NextRequest) => {
 				"user.fields": ["id", "name", "username", "profile_image_url"],
 			});
 
-			const [user] = await db
-				.insert(userTable)
-				.values({
+			// Calculate expiration time
+			const expiresAt = calculateExpiresAt(token.expiresIn);
+
+			// Check if user already exists
+			let user = await userRepo.getUserByXId(data.id);
+
+			if (user) {
+				// Update existing user
+				user = await userRepo.updateUser(user._id.toString(), {
+					name: data.name,
+					username: data.username,
+					profile: data.profile_image_url,
+					timezone: timezone as string,
+					access_token: token.accessToken,
+					refresh_token: token.refreshToken,
+					expiresIn: expiresAt,
+					scope: token.scope,
+				});
+			} else {
+				// Create new user
+				user = await userRepo.createUser({
 					xId: data.id,
 					name: data.name,
 					username: data.username,
 					profile: data.profile_image_url,
 					timezone: timezone as string,
-					accessToken: token.accessToken,
-					refreshToken: token.refreshToken,
-					expiresIn: token.expiresIn,
-					scope: token.scope.join(", "),
-					isAuthed: 1, // ✅ int not bool
-				})
-				.onConflictDoUpdate({
-					target: userTable.xId,
-					set: {
-						name: data.name,
-						username: data.username,
-						profile: data.profile_image_url,
-						timezone: timezone as string,
-						accessToken: token.accessToken,
-						refreshToken: token.refreshToken,
-						expiresIn: token.expiresIn,
-						scope: token.scope.join(", "),
-						isAuthed: 1,
-						updatedAt: new Date(), // ✅ update timestamp
-					},
-				})
-				.returning();
+					access_token: token.accessToken,
+					refresh_token: token.refreshToken,
+					expiresIn: expiresAt,
+					scope: token.scope,
+				});
+			}
 
-			await session.user(user);
+			// Set session with user data including expiresAt
+			await session.user({
+				id: user._id.toString(),
+				xId: user.xId,
+				isAuthed: true,
+				timezone: user.timezone,
+				accessToken: user.access_token,
+				refreshToken: user.refresh_token,
+				expiresIn: token.expiresIn,
+				expiresAt: expiresAt,
+				createdAt: user.createdAt,
+				updatedAt: user.updatedAt,
+			});
 			return NextResponse.json({ success: true }, { status: 200 });
 		} catch (error) {
 			console.error(error);

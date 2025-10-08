@@ -1,28 +1,24 @@
-import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { db } from "@/db/drizzle";
-import { postTable } from "@/db/schema";
-import { session } from "@/utils/session";
+import postRepo from "@/db/repos/post";
+import { createTokenValidationResponse, validateAndRefreshToken } from "@/utils/token-validation";
 
 export const GET = async () => {
 	try {
-		const sessionInfo = await session.get();
-		if (!sessionInfo?.user?.isAuthed) {
-			await session.destroy();
-			return NextResponse.json({ success: false, message: "Unauthorized access!" }, { status: 401 });
+		// Validate and refresh token if needed
+		const tokenValidation = await validateAndRefreshToken();
+
+		if (!tokenValidation.isValid) {
+			return createTokenValidationResponse(tokenValidation.error || "Token validation failed");
 		}
 
-		if (!sessionInfo?.user?.id) {
+		if (!tokenValidation.user?.id) {
 			return NextResponse.json(
 				{ success: false, message: "Something went wrong, please try again!" },
 				{ status: 400 },
 			);
 		}
-		const posts = await db
-			.select()
-			.from(postTable)
-			.where(eq(postTable.userId, sessionInfo.user.id))
-			.orderBy(postTable.scheduledFor);
+
+		const posts = await postRepo.getPostsByUserId(tokenValidation.user.id);
 
 		return NextResponse.json({ success: true, data: posts }, { status: 200 });
 	} catch (error) {

@@ -4,17 +4,21 @@ import type React from "react"
 
 import { useState } from "react"
 import { toast } from "sonner"
+import TimePicker from "@/components/TimePicker";
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 export function ScheduleForm() {
     const [content, setContent] = useState("")
-    const [when, setWhen] = useState<string>("")
+    const [date, setDate] = useState<Date | null>(null)
+    const [time, setTime] = useState<string>("")
     const [loading, setLoading] = useState<boolean>(false);
 
-    const canSubmit = content.trim().length > 0 && when
+    const canSubmit = content.trim().length > 0 && date && time
+    const normalizedMin = new Date()
+    normalizedMin.setHours(0, 0, 0, 0)
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -29,7 +33,13 @@ export function ScheduleForm() {
                 },
                 body: JSON.stringify({
                     content: content.trim(),
-                    scheduledFor: new Date(when).toISOString(),
+                    scheduledFor: (() => {
+                        if (!date || !time) return null
+                        const [hh, mm] = time.split(":").map(Number)
+                        const d = new Date(date)
+                        d.setHours(hh, mm, 0, 0)
+                        return d.toISOString()
+                    })(),
                 }),
             })
                 .then((res) => res.json())
@@ -45,7 +55,8 @@ export function ScheduleForm() {
             return
         } finally {
             setContent("")
-            setWhen("")
+            setDate(null)
+            setTime("")
             setLoading(false);
         }
     }
@@ -75,17 +86,26 @@ export function ScheduleForm() {
             <label className="text-sm font-medium" htmlFor="when">
                 Date & time
             </label>
-            <Input
-                id="when"
-                type="datetime-local"
-                value={when}
-                onChange={(e) => setWhen(e.target.value)}
-                className="mt-1 supports-[backdrop-filter]:backdrop-blur-sm"
-                style={{
-                    background: "color-mix(in oklab, var(--background), transparent 55%)",
-                    borderColor: "var(--glass-border-color)",
-                }}
-            />
+            <div className="mt-1 grid grid-cols-2 gap-2 items-start">
+                <div>
+                    <Calendar
+                        className="p-0"
+                        selected={date ?? undefined}
+                        mode="single"
+                        onSelect={(d) => {
+                            if (!d) return;
+                            setDate(d as Date)
+                        }}
+                        disabled={(dateArg: Date) => dateArg < normalizedMin}
+                    />
+                </div>
+                <div>
+                    <TimePicker
+                        value={time || undefined}
+                        onChange={(t) => setTime(t)}
+                    />
+                </div>
+            </div>
 
             <div className="pt-2">
                 <Button

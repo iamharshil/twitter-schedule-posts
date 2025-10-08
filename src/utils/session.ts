@@ -8,12 +8,14 @@ type SessionData = {
 		codeVerifier?: string;
 	};
 	user?: {
-		id?: number;
+		id?: string; // Changed to string for MongoDB ObjectId
+		xId?: string;
 		isAuthed?: boolean;
 		timezone?: string;
 		accessToken?: string;
 		refreshToken?: string;
 		expiresIn?: number;
+		expiresAt?: Date; // Added expiresAt timestamp
 		createdAt?: Date;
 		updatedAt?: Date;
 	};
