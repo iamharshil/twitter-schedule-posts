@@ -1,5 +1,5 @@
 {
-  "name": "twitter-schedule-posts",
+  "name": "postly",
   "version": "0.1.0",
   "private": true,
   "scripts": {

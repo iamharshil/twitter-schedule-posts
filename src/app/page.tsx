@@ -6,7 +6,7 @@ import { validateAndRefreshToken } from "@/utils/token-validation";
 export default async function HomePage() {
   const { user } = await session.get();
 
-  console.log("user", user);
+  // user information available here in server render
 
   if (!user) {
     redirect("/auth");
@@ -26,7 +26,7 @@ export default async function HomePage() {
   }
 
   if (tokenValidation.needsRefresh) {
-    console.log("Token was refreshed successfully");
+    // token refreshed successfully
   }
 
   return <Home />;

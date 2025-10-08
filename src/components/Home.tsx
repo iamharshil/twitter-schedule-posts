@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 // Calendar is unused here; DatePicker is used instead
 import { Card } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea";
+import { fetchJsonWithTiming } from '@/lib/fetchWithTiming'
 import { cn } from "@/lib/utils"
 import DatePicker from "./DatePicker";
 import { ScheduledList } from "./scheduled-list"
@@ -20,9 +21,8 @@ export default function Page() {
     const fetchScheduleList = useCallback(async () => {
         setLoadingPosts(true)
         try {
-            const res = await fetch("/api/posts")
-            const data = await res.json();
-            setPosts(data.data || []);
+            const data = await fetchJsonWithTiming('/api/posts')
+            setPosts(data?.data || [])
         } catch (e) {
             console.error('failed to fetch posts', e)
             setPosts([])
@@ -172,11 +172,9 @@ function InlineScheduleForm({ onRefresh }: { onRefresh?: () => Promise<void> }) 
         setLoading(true);
 
         try {
-            await fetch("/api/posts/schedule", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+            await fetchJsonWithTiming('/api/posts/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: content.trim(),
                     scheduledFor: (() => {
@@ -187,18 +185,14 @@ function InlineScheduleForm({ onRefresh }: { onRefresh?: () => Promise<void> }) 
                         return d.toISOString()
                     })(),
                 }),
+            }).then((data) => {
+                if (data?.success) {
+                    onRefresh?.().catch(() => { })
+                    return toast.success('Your post has been added to the schedule.')
+                } else {
+                    return toast.error(data?.message || 'Failed to schedule post. Please try again.')
+                }
             })
-                .then((res) => res.json())
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.success) {
-                        // refresh the list so the new post shows up
-                        onRefresh?.().catch(() => { })
-                        return toast.success("Your post has been added to the schedule.")
-                    } else {
-                        return toast.error(data?.message || "Failed to schedule post. Please try again.")
-                    }
-                })
         } catch (_) {
             toast.error("Failed to schedule post. Please try again.")
             return

@@ -8,7 +8,7 @@ export const GET = async () => {
 			scope: scopes,
 		});
 
-		console.log(data);
+		console.debug(data);
 
 		await session.setOAuth(data);
 		return NextResponse.json({ success: true, data });

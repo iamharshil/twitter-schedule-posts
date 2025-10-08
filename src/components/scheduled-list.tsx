@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 // Input removed: we use DatePicker + TimePicker for edits
 import { Textarea } from "@/components/ui/textarea"
+import { fetchJsonWithTiming } from '@/lib/fetchWithTiming'
 import type { Post, Posts } from "@/lib/validation"
 
 function formatDate(iso: string) {
@@ -31,6 +32,7 @@ export function ScheduledList({ posts, onRefresh, loading }: { posts: Posts; onR
     const [draftDate, setDraftDate] = useState<Date | null>(null)
     const [draftTime, setDraftTime] = useState<string>("")
     const [saving, setSaving] = useState<boolean>(false)
+    const [postingNowId, setPostingNowId] = useState<string | null>(null)
 
     const startEdit = (p: Post) => {
         setEditingId(p._id as string)
@@ -70,12 +72,11 @@ export function ScheduledList({ posts, onRefresh, loading }: { posts: Posts; onR
                     scheduledIso = d.toISOString()
                 }
 
-                const res = await fetch('/api/posts/update', {
+                const data = await fetchJsonWithTiming('/api/posts/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: editingId, content: draft.content.trim(), scheduledFor: scheduledIso }),
                 })
-                const data = await res.json()
                 if (data?.success) {
                     if (onRefresh) await onRefresh()
                 }
@@ -92,12 +93,11 @@ export function ScheduledList({ posts, onRefresh, loading }: { posts: Posts; onR
 
     const deletePost = async (_id: string) => {
         try {
-            const res = await fetch('/api/posts/delete', {
+            const data = await fetchJsonWithTiming('/api/posts/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: _id }),
             })
-            const data = await res.json()
             if (data?.success) {
                 if (onRefresh) await onRefresh()
             }
@@ -182,6 +182,42 @@ export function ScheduledList({ posts, onRefresh, loading }: { posts: Posts; onR
                                     <Button variant="secondary" className="w-full sm:w-auto" onClick={() => startEdit(p)}>
                                         <Edit2 className="mr-2 size-4" />
                                         Edit
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full sm:w-auto"
+                                        onClick={async () => {
+                                            try {
+                                                setPostingNowId(p._id as string)
+                                                const data = await fetchJsonWithTiming("/api/posts/post-now", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ id: p._id }),
+                                                })
+                                                if (data?.success) {
+                                                    if (onRefresh) await onRefresh()
+                                                } else {
+                                                    // TODO: surface error to user via toast (not implemented here)
+                                                    console.error('post-now failed', data?.error || data?.message)
+                                                }
+                                            } catch (e) {
+                                                console.error('post-now exception', e)
+                                            } finally {
+                                                setPostingNowId(null)
+                                            }
+                                        }}
+                                        disabled={postingNowId === (p._id as string) || saving}
+                                    >
+                                        {postingNowId === (p._id as string) ? (
+                                            <>
+                                                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" aria-hidden="true"></span>
+                                                Posting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Post now
+                                            </>
+                                        )}
                                     </Button>
                                     <Button variant="destructive" className="w-full sm:w-auto" onClick={() => deletePost(p._id as string)}>
                                         <Trash2 className="mr-2 size-4" />

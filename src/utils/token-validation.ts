@@ -33,7 +33,7 @@ export async function validateAndRefreshToken(): Promise<TokenValidationResult> 
 		// If we have expiresAt in session, use it
 		if (user.expiresAt) {
 			if (isTokenExpired(user.expiresAt)) {
-				console.log("Token expired, attempting refresh...");
+				console.debug("Token expired, attempting refresh...");
 				if (!user.id) {
 					return { isValid: false, error: "User ID not found in session" };
 				}
@@ -63,7 +63,7 @@ export async function validateAndRefreshToken(): Promise<TokenValidationResult> 
 			const expiresAt = calculateExpiresAt(user.expiresIn);
 
 			if (isTokenExpired(expiresAt)) {
-				console.log("Token expired (calculated), attempting refresh...");
+				console.debug("Token expired (calculated), attempting refresh...");
 				if (!user.id) {
 					return { isValid: false, error: "User ID not found in session" };
 				}

@@ -13,15 +13,15 @@ export default function AuthCallbackPage() {
             const urlParams = new URLSearchParams(window.location.search);
             const error = urlParams.get("error");
             if (error) {
-                console.log("error", error);
+                console.debug("error", error);
                 return;
             }
             const code = urlParams.get("code");
             const state = urlParams.get("state");
 
-            console.log("urlParams", urlParams);
-            console.log("code", code);
-            console.log("state", state);
+            console.debug("urlParams", urlParams);
+            console.debug("code", code);
+            console.debug("state", state);
 
             if (code && state) {
                 const res = await fetch(
