@@ -73,10 +73,10 @@ export async function postToXForUser(userIdOrObj: string | unknown, content: str
 			// Rate limit/backoff: inspect possible headers or rate info on error
 			try {
 				const errObj = err as unknown as Record<string, unknown>;
-				const headers = errObj["headers"] as Record<string, unknown> | undefined;
-				const rateLimit = errObj["rateLimit"] as Record<string, unknown> | undefined;
+				const headers = errObj.headers as Record<string, unknown> | undefined;
+				const rateLimit = errObj.rateLimit as Record<string, unknown> | undefined;
 				const retryAfter =
-					(headers && (headers["retry-after"] as unknown)) || (rateLimit && (rateLimit["reset"] as unknown));
+					(headers && (headers["retry-after"] as unknown)) || (rateLimit && (rateLimit.reset as unknown));
 				const waitMs = retryAfter ? Math.max(1000, Number(retryAfter) * 1000) : 500 * attempt;
 				await new Promise((r) => setTimeout(r, waitMs));
 			} catch {}
