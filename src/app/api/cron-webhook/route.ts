@@ -60,6 +60,10 @@ export const GET = async (req: Request) => {
 				await p.save();
 				console.debug("[cron-webhook] post saved with status posted and xPostId:", data.id);
 			} else {
+				console.error("[cron-webhook] tweet failed, no id in response data");
+				console.error(data);
+				console.error("[error-user]", user);
+				console.error("[error-post]", p);
 				// update post status to failed
 				p.status = "failed";
 				await p.save();
