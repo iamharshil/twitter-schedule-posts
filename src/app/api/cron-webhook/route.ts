@@ -73,9 +73,17 @@ export const GET = async (req: Request) => {
 				// token refreshed successfully, update user object
 				user = users.get(p.userId?._id as string);
 				if (user) {
-					user.access_token = tokenValidation.accessToken;
-					user.refresh_token = tokenValidation.refreshToken || user.refresh_token;
-					user.expiresAt = tokenValidation.expiresAt || user.expiresAt;
+					const refreshed = tokenValidation.user;
+					if (refreshed) {
+						user.access_token = refreshed.accessToken;
+						user.refresh_token = refreshed.refreshToken ?? user.refresh_token;
+						user.expiresAt = refreshed.expiresAt ?? user.expiresAt;
+					} else {
+						console.warn(
+							"[cron-webhook] needsRefresh is true but tokenValidation.user is undefined for user:",
+							p.userId?._id,
+						);
+					}
 					await users.set(p.userId?._id as string, user);
 				}
 			}
