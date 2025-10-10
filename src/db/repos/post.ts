@@ -4,7 +4,7 @@ import connectDB from "@/utils/database";
 export default {
 	async getPostsByUserId(userId: string) {
 		await connectDB();
-		return await Post.find({ userId }).sort({ scheduledFor: 1 });
+		return await Post.find({ userId, status: { $ne: "posted" } }).sort({ scheduledFor: 1 });
 	},
 
 	async getPostById(id: string) {
