@@ -16,6 +16,7 @@ export type PostResult = {
 export async function postToXForUser(userIdOrObj: string | unknown, content: string): Promise<PostResult> {
 	// Resolve user record if caller passed ID; otherwise accept session-style user object
 	let user: unknown = typeof userIdOrObj === "string" ? await userRepo.getUserById(userIdOrObj) : userIdOrObj;
+	console.log("⚡️ ~ postToX.ts:19 ~ postToXForUser ~ user:", user);
 	if (!user) return { success: false, error: "user_not_found", unrecoverable: true };
 
 	// Helper to read either DB-style (snake_case) or session-style (camelCase) fields
@@ -26,11 +27,15 @@ export async function postToXForUser(userIdOrObj: string | unknown, content: str
 		}
 		return undefined as T | undefined;
 	};
+	console.log("⚡️ ~ postToX.ts:30 ~ getUserField ~ getUserField:", getUserField);
 
 	// Prefer session/camelCase tokens if present, otherwise DB snake_case
 	let accessToken = getUserField<string>("accessToken", "access_token");
+	console.log("⚡️ ~ postToX.ts:34 ~ postToXForUser ~ accessToken:", accessToken);
 	let refreshToken = getUserField<string>("refreshToken", "refresh_token");
+	console.log("⚡️ ~ postToX.ts:36 ~ postToXForUser ~ refreshToken:", refreshToken);
 	const userIdStr = getUserField<string>("id", "_id")?.toString?.();
+	console.log("⚡️ ~ postToX.ts:38 ~ postToXForUser ~ userIdStr:", userIdStr);
 
 	console.debug("[postToX] posting for user:", {
 		_id: userIdStr,

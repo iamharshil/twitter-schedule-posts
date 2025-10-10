@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { TwitterApi } from "twitter-api-v2";
 import postRepo from "@/db/repos/post";
 import userRepo from "@/db/repos/user";
 import { postToXForUser } from "@/lib/postToX";
 import { withTiming } from "@/lib/serverTiming";
 import type { IPost } from "@/models/posts.model";
 import type { IUser } from "@/models/user.model";
+import User from "@/models/user.model";
+import connectDB from "@/utils/database";
 
 type CronResult = {
 	total: number;
@@ -24,54 +27,52 @@ export const GET = async (req: Request) => {
 		if (token !== process.env.API_KEY) {
 			return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 		}
+		const now = new Date();
+		const start = new Date(now.getTime() - TOLERANCE_MINUTES * 60 * 1000);
+		const end = new Date(now.getTime() + TOLERANCE_MINUTES * 60 * 1000);
 
-		return await withTiming("cron-webhook", async () => {
-			// Determine UTC window: now - tolerance -> now + tolerance
-			const now = new Date();
-			const start = new Date(now.getTime() - TOLERANCE_MINUTES * 60 * 1000);
-			const end = new Date(now.getTime() + TOLERANCE_MINUTES * 60 * 1000);
+		const pending = await postRepo.getScheduledPosts();
 
-			// Fetch pending posts that are scheduled up to 'end'
-			// Note: postRepo.getPendingPosts currently uses $lte new Date(), so we'll fetch all pending and filter
-			const pending = await postRepo.getPendingPosts();
+		const toProcess = (pending || []).filter((p: IPost & { userId?: IUser | string }) => {
+			const scheduled = new Date(p.scheduledFor as unknown as string);
+			return scheduled >= start && scheduled <= end;
+		});
+		if (toProcess.length === 0) {
+			console.debug("cron: no posts to process in the window", { start, end });
+			return NextResponse.json({ success: true, message: "No posts to process", data: { total: 0 } });
+		}
 
-			const toProcess = (pending || []).filter((p: IPost & { userId?: IUser | string }) => {
-				const scheduled = new Date(p.scheduledFor as unknown as string);
-				return scheduled >= start && scheduled <= end;
-			});
-
-			const result: CronResult = { total: toProcess.length, posted: 0, failed: 0, errors: [] };
-
-			function getObjectIdString(obj: unknown): string | undefined {
-				if (!obj) return undefined;
-				const maybe = obj as { _id?: { toString?: () => string } | string };
-				if (typeof maybe._id === "string") return maybe._id;
-				if (maybe._id && typeof maybe._id.toString === "function") return maybe._id.toString();
-				return undefined;
+		await connectDB();
+		const users = new Map();
+		toProcess.forEach(async (p) => {
+			let user = users.get(p.userId?._id as string);
+			if (!user) {
+				user = await User.findById(p.userId?._id).select("+access_token +refresh_token +expiresAt");
+				await users.set(p.userId?._id as string, user);
 			}
 
-			for (const p of toProcess) {
-				try {
-					const userIdStr = typeof p.userId === "string" ? p.userId : getObjectIdString(p.userId);
-					const user = (p.userId as IUser) || (userIdStr ? await userRepo.getUserById(userIdStr) : null);
-					if (!user) throw new Error("User not found");
-
-					const res = await postToXForUser(user, p.content as unknown as string);
-					const xPostId = res.success ? res.xPostId : undefined;
-					const pid = getObjectIdString(p) || "";
-					await postRepo.updatePostStatus(pid, "posted", xPostId || undefined);
-					result.posted += 1;
-				} catch (err) {
-					const reason = err instanceof Error ? err.message : String(err);
-					const pid = getObjectIdString(p) || "";
-					console.error("cron: failed to post", pid, reason);
-					await postRepo.updatePostStatus(pid, "failed");
-					result.failed += 1;
-					result.errors.push({ id: pid, reason });
-				}
+			const client = new TwitterApi(user?.access_token as string);
+			const { data } = await client.v2.tweet(p.content);
+			if (data?.id) {
+				// update post status to posted
+				p.status = "posted";
+				p.xPostId = data.id;
+				await p.save();
+				console.debug("[cron-webhook] post saved with status posted and xPostId:", data.id);
+			} else {
+				// update post status to failed
+				p.status = "failed";
+				await p.save();
+				console.debug("[cron-webhook] post save failed, marked as failed");
 			}
+		});
 
-			return NextResponse.json({ success: true, result }, { status: 200 });
+		console.debug(`cron: ${toProcess.length} posts to process in the window`, { start, end });
+
+		return NextResponse.json({
+			success: true,
+			message: "Posts processed",
+			data: { total: toProcess.length },
 		});
 	} catch (error) {
 		console.error("cron-webhook error:", error);

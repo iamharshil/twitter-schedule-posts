@@ -189,62 +189,70 @@ export function ScheduledList({
 									</p>
 								</div>
 								<div className="flex items-stretch gap-2 flex-wrap w-full md:w-auto md:justify-end">
-									<Button
-										variant="secondary"
-										className="w-full sm:w-auto h-9 px-4 cursor-pointer"
-										onClick={() => startEdit(p)}
-									>
-										<Edit2 className="mr-2 size-4" />
-										Edit
-									</Button>
-									<Button
-										variant="success"
-										className="w-full sm:w-auto h-9 px-4 cursor-pointer"
-										onClick={async () => {
-											try {
-												setPostingNowId(p._id as string);
-												const data = await fetchJsonWithTiming("/api/posts/post-now", {
-													method: "POST",
-													headers: { "Content-Type": "application/json" },
-													body: JSON.stringify({ id: p._id }),
-												});
-												if (data?.success) {
-													if (onRefresh) await onRefresh();
-												} else {
-													// TODO: surface error to user via toast (not implemented here)
-													console.error("post-now failed", data?.error || data?.message);
-												}
-											} catch (e) {
-												console.error("post-now exception", e);
-											} finally {
-												setPostingNowId(null);
-											}
-										}}
-										disabled={postingNowId === (p._id as string) || saving}
-									>
-										{postingNowId === (p._id as string) ? (
-											<>
-												<span
-													className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"
-													aria-hidden="true"
-												></span>
-												Posting...
-											</>
-										) : (
-											<>
-												<Play className="h-4 w-4 mr-2" />
-												Post now
-											</>
-										)}
-									</Button>
-									<Button
-										variant="destructive"
-										className="w-full sm:w-auto h-9 px-4 cursor-pointer"
-										onClick={() => deletePost(p._id as string)}
-									>
-										<Trash2 className="mr-2 size-4" />
-										Delete
-									</Button>
+									{p.status !== "posted" ? (
+										<>
+											<Button
+												variant="secondary"
+												className="w-full sm:w-auto h-9 px-4 cursor-pointer"
+												onClick={() => startEdit(p)}
+											>
+												<Edit2 className="mr-2 size-4" />
+												Edit
+											</Button>
+											<Button
+												variant="success"
+												className="w-full sm:w-auto h-9 px-4 cursor-pointer"
+												onClick={async () => {
+													try {
+														setPostingNowId(p._id as string);
+														const data = await fetchJsonWithTiming("/api/posts/post-now", {
+															method: "POST",
+															headers: { "Content-Type": "application/json" },
+															body: JSON.stringify({ id: p._id }),
+														});
+														if (data?.success) {
+															if (onRefresh) await onRefresh();
+														} else {
+															// TODO: surface error to user via toast (not implemented here)
+															console.error("post-now failed", data?.error || data?.message);
+														}
+													} catch (e) {
+														console.error("post-now exception", e);
+													} finally {
+														setPostingNowId(null);
+													}
+												}}
+												disabled={postingNowId === (p._id as string) || saving}
+											>
+												{postingNowId === (p._id as string) ? (
+													<>
+														<span
+															className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"
+															aria-hidden="true"
+														></span>
+														Posting...
+													</>
+												) : (
+													<>
+														<Play className="h-4 w-4 mr-2" />
+														Post now
+													</>
+												)}
+											</Button>
+											<Button
+												variant="destructive"
+												className="w-full sm:w-auto h-9 px-4 cursor-pointer"
+												onClick={() => deletePost(p._id as string)}
+											>
+												<Trash2 className="mr-2 size-4" />
+												Delete
+											</Button>
+										</>
+									) : (
+										<span className="inline-block rounded-full bg-cyan-900 text-cyan-100 border border-cyan-500 px-3 py-1 text-xs font-medium">
+											Posted
+										</span>
+									)}
 								</div>
 							</div>
 						) : (

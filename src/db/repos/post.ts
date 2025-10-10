@@ -35,6 +35,13 @@ export default {
 		}).populate("userId");
 	},
 
+	async getScheduledPosts() {
+		await connectDB();
+		return await Post.find({ status: { $in: ["pending", "failed"] } })
+			.populate("userId")
+			.sort({ scheduledFor: 1 });
+	},
+
 	async updatePostStatus(id: string, status: "pending" | "posted" | "failed", xPostId?: string) {
 		await connectDB();
 		const updateData: Record<string, unknown> = { status };
