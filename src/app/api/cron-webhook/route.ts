@@ -8,6 +8,7 @@ import type { IPost } from "@/models/posts.model";
 import type { IUser } from "@/models/user.model";
 import User from "@/models/user.model";
 import connectDB from "@/utils/database";
+import { validateAndRefreshToken } from "@/utils/token-validation";
 
 type CronResult = {
 	total: number;
@@ -51,6 +52,33 @@ export const GET = async (req: Request) => {
 				await users.set(p.userId?._id as string, user);
 			}
 
+			const tokenValidation = await validateAndRefreshToken();
+			if (!tokenValidation) {
+				console.error("[cron-webhook] token validation failed for user:", p.userId?._id);
+				// update post status to failed
+				p.status = "failed";
+				await p.save();
+				console.debug("[cron-webhook] post save failed, marked as failed due to token validation");
+				return;
+			}
+			if (!tokenValidation.isValid) {
+				console.error("[cron-webhook] token invalid for user:", p.userId?._id);
+				// update post status to failed
+				p.status = "failed";
+				await p.save();
+				console.debug("[cron-webhook] post save failed, marked as failed due to invalid token");
+				return;
+			}
+			if (tokenValidation.needsRefresh) {
+				// token refreshed successfully, update user object
+				user = users.get(p.userId?._id as string);
+				if (user) {
+					user.access_token = tokenValidation.accessToken;
+					user.refresh_token = tokenValidation.refreshToken || user.refresh_token;
+					user.expiresAt = tokenValidation.expiresAt || user.expiresAt;
+					await users.set(p.userId?._id as string, user);
+				}
+			}
 			const client = new TwitterApi(user?.access_token as string);
 			const { data } = await client.v2.tweet(p.content);
 			if (data?.id) {
