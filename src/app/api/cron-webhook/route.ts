@@ -76,8 +76,8 @@ export const GET = async (req: Request) => {
 						continue;
 					}
 
-					if (!process.env.TWITTER_CLIENT_ID || !process.env.TWITTER_CLIENT_SECRET) {
-						console.error("[cron-webhook] missing TWITTER_CLIENT_ID/SECRET env vars; cannot refresh token");
+					if (!process.env.CLIENT_ID || !process.env.CLIENT_SECRET) {
+						console.error("[cron-webhook] missing CLIENT_ID/SECRET env vars; cannot refresh token");
 						p.status = "failed";
 						await p.save();
 						continue;
@@ -86,8 +86,8 @@ export const GET = async (req: Request) => {
 					try {
 						// Use OAuth2 client to refresh user token
 						const oauthClient = new TwitterApi({
-							clientId: process.env.TWITTER_CLIENT_ID,
-							clientSecret: process.env.TWITTER_CLIENT_SECRET,
+							clientId: process.env.CLIENT_ID,
+							clientSecret: process.env.CLIENT_SECRET,
 						});
 						const refreshed = await oauthClient.refreshOAuth2Token(user.refresh_token as string);
 
