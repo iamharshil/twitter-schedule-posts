@@ -53,6 +53,7 @@ export const GET = async (req: Request) => {
 			}
 
 			const tokenValidation = await validateAndRefreshToken();
+			console.debug("[cron-webhook] token validation result:", tokenValidation);
 			if (!tokenValidation) {
 				console.error("[cron-webhook] token validation failed for user:", p.userId?._id);
 				// update post status to failed
