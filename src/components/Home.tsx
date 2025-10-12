@@ -140,7 +140,7 @@ export default function Page() {
 							}}
 						/>
 						<div className="relative flex items-center justify-between">
-							<h2 className="text-lg font-medium">Scheduled Posts</h2>
+							<h2 className="text-lg font-medium">Scheduled Posts ({posts.length})</h2>
 						</div>
 						<div className="relative">
 							<ScheduledList posts={posts} onRefresh={fetchScheduleList} loading={loadingPosts} />
