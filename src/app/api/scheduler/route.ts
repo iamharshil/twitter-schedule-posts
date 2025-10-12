@@ -3,7 +3,7 @@ var cron = require("node-cron");
 
 export async function GET(req: Request) {
     try {
-        cron.schedule("*/15 * * * *", async () => {
+        cron.schedule("*/5 * * * *", async () => {
             console.log("Running cron...")
             await fetch(`${process.env.NEXT_PUBLIC_SITE_URL as string}/api/cron-webhook`, {
                 headers: new Headers({

@@ -29,17 +29,17 @@ export const GET = async (req: Request) => {
 			return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
 		}
 		const now = new Date();
-		const start = new Date(now.getTime() - TOLERANCE_MINUTES * 60 * 1000);
 		const end = new Date(now.getTime() + TOLERANCE_MINUTES * 60 * 1000);
 
 		const pending = await postRepo.getScheduledPosts();
+		console.log("pending", pending);
 
 		const toProcess = (pending || []).filter((p: IPost & { userId?: IUser | string }) => {
 			const scheduled = new Date(p.scheduledFor as unknown as string);
-			return scheduled >= start && scheduled <= end;
+			return scheduled <= end;
 		});
 		if (toProcess.length === 0) {
-			console.debug("cron: no posts to process in the window", { start, end });
+			console.debug("cron: no posts to process in the window", { end });
 			return NextResponse.json({ success: true, message: "No posts to process", data: { total: 0 } });
 		}
 
@@ -144,7 +144,7 @@ export const GET = async (req: Request) => {
 			}
 		}
 
-		console.debug(`cron: ${toProcess.length} posts to process in the window`, { start, end });
+		console.debug(`cron: ${toProcess.length} posts to process in the window`, { end });
 
 		return NextResponse.json({
 			success: true,
